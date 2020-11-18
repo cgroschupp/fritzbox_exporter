@@ -16,6 +16,7 @@ ADD . /go/src/app
 RUN CGO_ENABLED=0 go build cmd/exporter/exporter.go
 
 FROM arm32v7/alpine:${ALPINE_VERSION}
+COPY --from=qemu /tmp/qemu-arm-static /usr/bin/
 
 RUN apk update && apk add --no-cache ca-certificates
 
