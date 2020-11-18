@@ -1,0 +1,11 @@
+image: cgroschupp/fritzbox_exporter:latest
+manifests:
+  - image: cgroschupp/fritzbox_exporter:amd64
+    platform:
+      architecture: amd64
+      os: linux
+  - image: cgroschupp/fritzbox_exporter:arm32v7
+    platform:
+      architecture: arm
+      os: linux
+      variant: v7

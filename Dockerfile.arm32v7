@@ -1,20 +1,26 @@
-FROM arm32v7/golang:buster AS build-env
+ARG ALPINE_VERSION=3.11
+ARG GO_VERSION=1.14
 
-LABEL maintainer="Max Schmitt <max@schmitt.mx>"
-LABEL description="FRITZ!Box Prometheus exporter"
+FROM alpine:${ALPINE_VERSION} AS qemu
+RUN apk --update add --no-cache curl
+RUN cd /tmp && \
+    curl -L https://github.com/balena-io/qemu/releases/download/v3.0.0%2Bresin/qemu-3.0.0+resin-arm.tar.gz | tar zxvf - -C . && mv qemu-3.0.0+resin-arm/qemu-arm-static .
 
-ADD . /go/src/github.com/mxschmitt/fritzbox_exporter
+FROM arm32v7/golang:${GO_VERSION}-alpine AS builder
+COPY --from=qemu /tmp/qemu-arm-static /usr/bin/
+RUN apk --update add --no-cache git
+WORKDIR /go/src/app
+ADD . /go/src/app
+# RUN go mod download
 
-RUN cd /go/src/github.com/mxschmitt/fritzbox_exporter/cmd/exporter && \
-    go get ./... && \
-    CGO_ENABLED=0 go build -o /exporter
+RUN CGO_ENABLED=0 go build cmd/exporter/exporter.go
 
-FROM arm32v7/alpine
+FROM arm32v7/alpine:${ALPINE_VERSION}
 
 RUN apk update && apk add --no-cache ca-certificates
 
-COPY --from=build-env /exporter /
+COPY --from=builder /go/src/app/exporter /usr/local/bin/exporter
 
 EXPOSE 9133
 
-ENTRYPOINT ["/exporter"]
+ENTRYPOINT ["/usr/local/bin/exporter"]
